@@ -12,7 +12,7 @@
 // after the generated code, you will need to define   var Module = {};
 // before the code. Then that object will be used in the code, and you
 // can continue to use Module afterwards as well.
-var Module = typeof Module != 'undefined' ? Module : {};
+var Module = typeof useZenohNetwork != 'undefined' ? useZenohNetwork : {};
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
@@ -64,14 +64,17 @@ if (ENVIRONMENT_IS_WORKER) {
 else if (ENVIRONMENT_IS_NODE) {
   _scriptDir = __filename;
 }
-
+console.log(Module);
 // `/` should be present at the end if `scriptDirectory` is not empty
 var scriptDirectory = '';
 function locateFile(path) {
+  console.log(Module['locateFile']);
+
   if (Module['locateFile']) {
     return Module['locateFile'](path, scriptDirectory);
   }
-  return scriptDirectory + path;
+  return scriptDirectory + path; // It seems it returns here... ENOENT: no such file or directory, open 'zenoh-wasm.wasm' Empty path + filename. Means the environment does not looks good.
+
 }
 
 // Hooks that are implemented differently in different runtime environments.
@@ -18714,6 +18717,115 @@ var ASM_CONSTS = {
   Module['Asyncify'] = Asyncify;
 
 
+  var getCFunc = (ident) => {
+      var func = Module['_' + ident]; // closure exported function
+      assert(func, 'Cannot call unknown function ' + ident + ', make sure it is exported');
+      return func;
+    };
+  Module['getCFunc'] = getCFunc;
+  
+  
+  
+  
+  
+  
+  
+    /**
+     * @param {string|null=} returnType
+     * @param {Array=} argTypes
+     * @param {Arguments|Array=} args
+     * @param {Object=} opts
+     */
+  var ccall = (ident, returnType, argTypes, args, opts) => {
+      // For fast lookup of conversion functions
+      var toC = {
+        'string': (str) => {
+          var ret = 0;
+          if (str !== null && str !== undefined && str !== 0) { // null string
+            // at most 4 bytes per UTF-8 code point, +1 for the trailing '\0'
+            ret = stringToUTF8OnStack(str);
+          }
+          return ret;
+        },
+        'array': (arr) => {
+          var ret = stackAlloc(arr.length);
+          writeArrayToMemory(arr, ret);
+          return ret;
+        }
+      };
+  
+      function convertReturnValue(ret) {
+        if (returnType === 'string') {
+          
+          return UTF8ToString(ret);
+        }
+        if (returnType === 'boolean') return Boolean(ret);
+        return ret;
+      }
+  
+      var func = getCFunc(ident);
+      var cArgs = [];
+      var stack = 0;
+      assert(returnType !== 'array', 'Return type should not be "array".');
+      if (args) {
+        for (var i = 0; i < args.length; i++) {
+          var converter = toC[argTypes[i]];
+          if (converter) {
+            if (stack === 0) stack = stackSave();
+            cArgs[i] = converter(args[i]);
+          } else {
+            cArgs[i] = args[i];
+          }
+        }
+      }
+      // Data for a previous async operation that was in flight before us.
+      var previousAsync = Asyncify.currData;
+      var ret = func.apply(null, cArgs);
+      function onDone(ret) {
+        runtimeKeepalivePop();
+        if (stack !== 0) stackRestore(stack);
+        return convertReturnValue(ret);
+      }
+    var asyncMode = opts && opts.async;
+  
+      // Keep the runtime alive through all calls. Note that this call might not be
+      // async, but for simplicity we push and pop in all calls.
+      runtimeKeepalivePush();
+      if (Asyncify.currData != previousAsync) {
+        // A change in async operation happened. If there was already an async
+        // operation in flight before us, that is an error: we should not start
+        // another async operation while one is active, and we should not stop one
+        // either. The only valid combination is to have no change in the async
+        // data (so we either had one in flight and left it alone, or we didn't have
+        // one), or to have nothing in flight and to start one.
+        assert(!(previousAsync && Asyncify.currData), 'We cannot start an async operation when one is already flight');
+        assert(!(previousAsync && !Asyncify.currData), 'We cannot stop an async operation in flight');
+        // This is a new async operation. The wasm is paused and has unwound its stack.
+        // We need to return a Promise that resolves the return value
+        // once the stack is rewound and execution finishes.
+        assert(asyncMode, 'The call to ' + ident + ' is running asynchronously. If this was intended, add the async option to the ccall/cwrap call.');
+        return Asyncify.whenDone().then(onDone);
+      }
+  
+      ret = onDone(ret);
+      // If this is an async ccall, ensure we return a promise
+      if (asyncMode) return Promise.resolve(ret);
+      return ret;
+    };
+  Module['ccall'] = ccall;
+  
+    /**
+     * @param {string=} returnType
+     * @param {Array=} argTypes
+     * @param {Object=} opts
+     */
+  var cwrap = (ident, returnType, argTypes, opts) => {
+      return function() {
+        return ccall(ident, returnType, argTypes, arguments, opts);
+      }
+    };
+  Module['cwrap'] = cwrap;
+
 
 
   var writeI53ToI64Clamped = (ptr, num) => {
@@ -20529,116 +20641,8 @@ var ASM_CONSTS = {
   var ASSERTIONS = 1;
   Module['ASSERTIONS'] = ASSERTIONS;
 
-  var getCFunc = (ident) => {
-      var func = Module['_' + ident]; // closure exported function
-      assert(func, 'Cannot call unknown function ' + ident + ', make sure it is exported');
-      return func;
-    };
-  Module['getCFunc'] = getCFunc;
 
-  
-  
-  
-  
-  
-  
-    /**
-     * @param {string|null=} returnType
-     * @param {Array=} argTypes
-     * @param {Arguments|Array=} args
-     * @param {Object=} opts
-     */
-  var ccall = (ident, returnType, argTypes, args, opts) => {
-      // For fast lookup of conversion functions
-      var toC = {
-        'string': (str) => {
-          var ret = 0;
-          if (str !== null && str !== undefined && str !== 0) { // null string
-            // at most 4 bytes per UTF-8 code point, +1 for the trailing '\0'
-            ret = stringToUTF8OnStack(str);
-          }
-          return ret;
-        },
-        'array': (arr) => {
-          var ret = stackAlloc(arr.length);
-          writeArrayToMemory(arr, ret);
-          return ret;
-        }
-      };
-  
-      function convertReturnValue(ret) {
-        if (returnType === 'string') {
-          
-          return UTF8ToString(ret);
-        }
-        if (returnType === 'boolean') return Boolean(ret);
-        return ret;
-      }
-  
-      var func = getCFunc(ident);
-      var cArgs = [];
-      var stack = 0;
-      assert(returnType !== 'array', 'Return type should not be "array".');
-      if (args) {
-        for (var i = 0; i < args.length; i++) {
-          var converter = toC[argTypes[i]];
-          if (converter) {
-            if (stack === 0) stack = stackSave();
-            cArgs[i] = converter(args[i]);
-          } else {
-            cArgs[i] = args[i];
-          }
-        }
-      }
-      // Data for a previous async operation that was in flight before us.
-      var previousAsync = Asyncify.currData;
-      var ret = func.apply(null, cArgs);
-      function onDone(ret) {
-        runtimeKeepalivePop();
-        if (stack !== 0) stackRestore(stack);
-        return convertReturnValue(ret);
-      }
-    var asyncMode = opts && opts.async;
-  
-      // Keep the runtime alive through all calls. Note that this call might not be
-      // async, but for simplicity we push and pop in all calls.
-      runtimeKeepalivePush();
-      if (Asyncify.currData != previousAsync) {
-        // A change in async operation happened. If there was already an async
-        // operation in flight before us, that is an error: we should not start
-        // another async operation while one is active, and we should not stop one
-        // either. The only valid combination is to have no change in the async
-        // data (so we either had one in flight and left it alone, or we didn't have
-        // one), or to have nothing in flight and to start one.
-        assert(!(previousAsync && Asyncify.currData), 'We cannot start an async operation when one is already flight');
-        assert(!(previousAsync && !Asyncify.currData), 'We cannot stop an async operation in flight');
-        // This is a new async operation. The wasm is paused and has unwound its stack.
-        // We need to return a Promise that resolves the return value
-        // once the stack is rewound and execution finishes.
-        assert(asyncMode, 'The call to ' + ident + ' is running asynchronously. If this was intended, add the async option to the ccall/cwrap call.');
-        return Asyncify.whenDone().then(onDone);
-      }
-  
-      ret = onDone(ret);
-      // If this is an async ccall, ensure we return a promise
-      if (asyncMode) return Promise.resolve(ret);
-      return ret;
-    };
-  Module['ccall'] = ccall;
 
-  
-  
-    /**
-     * @param {string=} returnType
-     * @param {Array=} argTypes
-     * @param {Object=} opts
-     */
-  var cwrap = (ident, returnType, argTypes, opts) => {
-      return function() {
-        return ccall(ident, returnType, argTypes, arguments, opts);
-      }
-    };
-  Module['cwrap'] = cwrap;
 
 
 
@@ -44754,6 +44758,7 @@ var _in6addr_loopback = Module['_in6addr_loopback'] = 364028;
 
 Module['keepRuntimeAlive'] = keepRuntimeAlive;
 Module['wasmMemory'] = wasmMemory;
+Module['cwrap'] = cwrap;
 Module['UTF8ToString'] = UTF8ToString;
 Module['ExitStatus'] = ExitStatus;
 

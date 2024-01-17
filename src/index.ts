@@ -23,8 +23,8 @@ interface Module {
     _zw_default_config(clocator: any): any,
     onRuntimeInitialized(): Promise<any>,
     registerJSCallback(callback: any): number,
-    _test_call(ptr: number, length: number): number,
     writeArrayToMemory(array: Uint8Array, buffer: number): any, // TODO: Returns None ? 
+    _test_call(ptr: number, length: number, cb: () => Promise<void>): number,
     cwrap(...arg: any): any,
     api: any
 }
@@ -83,6 +83,10 @@ export async function zenoh(): Promise<Module> {
                 _register_rm_callback: mod_instance.cwrap("register_rm_callback", "void", ["number"], { async: true }),
                 // To allocate memory
                 _z_malloc: mod_instance.cwrap("z_malloc", "number", ["number"], { async: true }),
+                //  test call 
+                _test_call: mod_instance.cwrap("_test_call", "number", ["number", "number", "number"], { async: true }),
+                // (ptr: number, length: number, cb: () => Promise<void>): number,
+
                 // _zw_make_ke: module2.cwrap("zw_make_ke", "void", ["number"], { async: true }),
                 // TODO: add and expose zw_make_selector
 
@@ -532,4 +536,33 @@ export class Session {
         return ret
     }
 
+}
+
+
+export class DEV {
+
+    static async runme(): Promise<number> {
+
+        const Zenoh: Module = await zenoh();
+
+        const arr = new Uint8Array([65, 66, 67, 68]);
+
+        let dataPtr = await Zenoh.api._z_malloc(arr.length);
+
+        Zenoh.writeArrayToMemory(arr, dataPtr);
+
+        let cb = async function () {
+            var c = 0;
+            while (c < 10) {
+                console.log("What is my purpose ? You log");
+                console.log("Oh my god");
+                c++
+            }
+        };
+
+        // await Zenoh._test_call(dataPtr, arr.length, cb);
+        await Zenoh.api._test_call(dataPtr, arr.length, cb);
+
+        return 10;
+    }
 }

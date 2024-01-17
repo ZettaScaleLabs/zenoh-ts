@@ -28,20 +28,23 @@ async function main() {
     // const session = await zenoh.Session.open(zenoh.Config.new("ws/192.168.1.148:7447"))
     const keyexpr = await session.declare_ke("demo/ts/test");
 
-    console.log("Before Async");
-    executeAsync(async function () {
-        var c = 0;
-        while (c < 10000) {
-            let enc: TextEncoder = new TextEncoder(); // always utf-8
-            let uint8arr: Uint8Array = enc.encode(`ABCDEFG${c}`);
-            let value: zenoh.Value = new zenoh.Value(uint8arr);
-            console.log("Put With Value ", uint8arr);
-            var pub_res = await session.put(keyexpr, value);
-            await sleep(10);
-            c++;
-        }
-    });
+    // console.log("Before Async");
+    // executeAsync(async function () {
+    //     var c = 0;
+    //     while (c < 10000) {
+    //         let enc: TextEncoder = new TextEncoder(); // always utf-8
+    //         let uint8arr: Uint8Array = enc.encode(`ABCDEFG${c}`);
+    //         let value: zenoh.Value = new zenoh.Value(uint8arr);
+    //         console.log("Put With Value ", uint8arr);
+    //         var pub_res = await session.put(keyexpr, value);
+    //         await sleep(10);
+    //         c++;
+    //     }
+    // });
 
+    console.log("Woop");
+    zenoh.DEV.runme();
+    console.log("Woop End");
 
     // TODO TEST
 
@@ -49,10 +52,10 @@ async function main() {
     // var enc = new TextDecoder("utf-8"); // Obviously use different 
     // 
     // let decoded_message: string = enc.decode(arr);
+    
+    // let myhandler : Handler<Event, Receiver> = {
 
-    let myhandler : Handler<Event, Receiver> = {
-
-    };
+    // };
 
     // const result = await session.sub("demo/ts/test_server/", (...args: any) => {
     //     console.log("Hello, here are your args: ", args)

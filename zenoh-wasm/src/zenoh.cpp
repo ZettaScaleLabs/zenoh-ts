@@ -153,11 +153,8 @@ extern "C"
 
   // CONTINUE FROM HERE 
   // CAN I USE A FUNCTION DEFINED IN zenoh.cpp to callback to a js function ? 
-  EM_JS(void, testReadFile, (), {
+  EM_JS(void, test_async_function, (), {
       Asyncify.handleAsync(async () => {
-          // FS.createDataFile("/", "foo.txt", "hello world", true, true, true);
-          // var uint8Array = await FS.readFile("foo.txt");
-          // var content = new TextDecoder("utf-8").decode(uint8Array);
           // console.log(content);
       });
   });

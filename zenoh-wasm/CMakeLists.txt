@@ -49,15 +49,16 @@ set(WASM_BUILD_FLAGS " \
 # TODO more functions exposed via Exported_functions
 set(WASM_LINK_FLAGS "--js-library=${CMAKE_SOURCE_DIR}/func-wrapper.js \
 --extern-pre-js=${CMAKE_SOURCE_DIR}/COPYWRITE.js \
+--bind \
 -s TEXTDECODER=0 \
 -s ENVIRONMENT=web,worker \
--s EXPORTED_RUNTIME_METHODS=[\"writeArrayToMemory\",\"getValue\",\"setValue\",\"registerJSCallback\",\"onRuntimeInitialized\",\"cwrap\",\"UTF8ToString\",\"stringToUTF8OnStack\"] \
+-s EXPORTED_RUNTIME_METHODS=[\"writeArrayToMemory\",\"getValue\",\"setValue\",\"registerJSCallback\",\"cwrap\",\"UTF8ToString\",\"stringToUTF8OnStack\"] \
 -s EXPORTED_FUNCTIONS=['_test_call'] \
 -s PTHREAD_POOL_SIZE=16 \
--s ERROR_ON_UNDEFINED_SYMBOLS=0 \
 -s ALLOW_TABLE_GROWTH \
 -s RESERVED_FUNCTION_POINTERS=100 \
 -s ASYNCIFY=1 \
+-s ASYNCIFY_IMPORTS=[\"ts_callback\"] \
 -s ASYNCIFY_STACK_SIZE=65535 \
 -s EXPORT_ES6=1 \
 -s MODULARIZE=1 \
@@ -68,6 +69,9 @@ set(WASM_LINK_FLAGS "--js-library=${CMAKE_SOURCE_DIR}/func-wrapper.js \
 -s ALLOW_TABLE_GROWTH \
 -pthread \
 -fPIC ")
+
+# -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
+
 
 # TODO: Get exported Functions flag to work later
 

@@ -484,15 +484,7 @@ export class Session {
             receiver = (() => { })();
         }
 
-        // TODO : Continue from here 
-        // let sample_call_back = (
-        //     // number is function pointer
-        //     c_drop_fn: number
-        //     // number is function pointer
-        //     c_drop_ctx: number
-        //     // number is function pointer
-        //     c_sample_params: number
-        // ) ();
+        // TODO : Continue from here _test_call
 
         const on_event_ptr: number = Zenoh.registerJSCallback(onEvent);
         const on_close_ptr: number = Zenoh.registerJSCallback(onClose);
@@ -535,9 +527,13 @@ export class Session {
         }
         return ret
     }
-
 }
 
+
+async function ts_callback(): Promise<number> {
+    console.log("Woop woop ");
+    return 10;
+}
 
 export class DEV {
 
@@ -551,18 +547,21 @@ export class DEV {
 
         Zenoh.writeArrayToMemory(arr, dataPtr);
 
-        let cb = async function () {
-            var c = 0;
-            while (c < 10) {
-                console.log("What is my purpose ? You log");
-                console.log("Oh my god");
-                c++
-            }
-        };
+        // let cb = async function () {
+        //     var c = 0;
+        //     while (c < 10) {
+        //         console.log("What is my purpose ? You log");
+        //         console.log("Oh my god");
+        //         c++
+        //     }
+        // };
 
         // await Zenoh._test_call(dataPtr, arr.length, cb);
-        await Zenoh.api._test_call(dataPtr, arr.length, cb);
+        console.log("--DEV");
+        await Zenoh.api._test_call(dataPtr, arr.length, ts_callback);
+        console.log("--DEV End");
 
         return 10;
     }
 }
+

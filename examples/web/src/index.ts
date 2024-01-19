@@ -25,8 +25,10 @@ async function main() {
     // Test push
     console.log("main");
     const session = await zenoh.Session.open(zenoh.Config.new("ws/192.168.21.42:7447"))
+    console.log("Open Zenoh");
     // const session = await zenoh.Session.open(zenoh.Config.new("ws/192.168.1.148:7447"))
     const keyexpr = await session.declare_ke("demo/ts/test");
+    console.log("Declare Key expression");
 
     // console.log("Before Async");
     // executeAsync(async function () {
@@ -42,9 +44,9 @@ async function main() {
     //     }
     // });
 
-    console.log("Woop");
+    console.log("--Woop");
     zenoh.DEV.runme();
-    console.log("Woop End");
+    console.log("--Woop End");
 
     // TODO TEST
 

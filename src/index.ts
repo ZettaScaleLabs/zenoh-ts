@@ -549,48 +549,38 @@ export class Session {
     }
     
     async neo_sub(keyexpr: IntoKeyExpr): Promise<number> {
-    // async neo_sub(keyexpr: string, callback: () => void): Promise<number> {
-        // const Zenoh: Module = await zenoh();
+
         console.log("INSIDE neo_sub ");
 
         const [Zenoh, key_expr] = await Promise.all([zenoh(), keyexpr[intoKeyExpr]()]);
 
         const pke = key_expr.__ptr;
 
-        // while (1) {
-        //     zp_read(z_session_loan(&s), NULL);
-        //     zp_send_keep_alive(z_session_loan(&s), NULL);
-        //     zp_send_join(z_session_loan(&s), NULL);
+        // SINGLE THREADED ASYNC APPROACH
+        // SINGLE THREADED ASYNC APPROACH
+        // SINGLE THREADED ASYNC APPROACH        
+        // function executeAsync(func: any) {
+        //     setTimeout(func, 0);
         // }
-        
-        function executeAsync(func: any) {
-            setTimeout(func, 0);
-        }
-
-        
-        // TODO How do i stop this async Function ? 
-        // Cleanup
-        const session_ptr = this.__ptr;
-        executeAsync(async function () {
-            console.log("Inside Execute Async Function !");
-
-            while (1) {
-                Zenoh.neo_poll_read_func(session_ptr);
-            }
-            console.log("Finish Put Values");
-        });
-
-
-        // console.log("INSIDE before Function invok ");
-
+        // const session_ptr = this.__ptr;
+        // executeAsync(async function () {
+        //     console.log("Inside Execute Async Function !");
+        //     while (1) {
+        //         Zenoh.neo_poll_read_func(session_ptr);
+        //         await sleep(500);
+        //     }
+        //     console.log("Finish Put Values");
+        // });
+        // SINGLE THREADED ASYNC APPROACH
+        // SINGLE THREADED ASYNC APPROACH
+        // SINGLE THREADED ASYNC APPROACH
         async function neo_sub_async_ts_callback(num: number): Promise<number> {
             console.log("    neo_sub_async_ts_callback: ", num);
             return 25 + num;
         }
 
-        // console.log("INSIDE neo_zw_sub ");
-
         const ret = await Zenoh.neo_zw_sub(this.__ptr, pke, neo_sub_async_ts_callback);
+
         console.log("ret")
         if (ret < 0) {
             throw "An error occured while putting"
@@ -667,6 +657,5 @@ export class DEV {
 
     }
 }
-
 
 

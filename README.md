@@ -89,8 +89,12 @@ RUST_LOG=DEBUG cargo run zenohd -- -l tcp/[::]:7447 -l ws/[::]:10000
 
 ```
 RUST_LOG=DEBUG ./z_sub -k demo/ts/rcv
+
 ```
 
+```
+RUST_LOG=DEBUG ./z_pub -k demo/send/to/ts
+```
 
 <!-- cargo run --release --example z_sub -- -k demo/ts/** -->
 <!-- -k demo/rcv_from_ts/* -->

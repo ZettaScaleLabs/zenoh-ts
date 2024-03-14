@@ -22,16 +22,17 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/build.emscripten)
 
 # PICO
 set(BUILD_EXAMPLES OFF CACHE BOOL "Disables examples" FORCE)
-set(BUILD_TESTING OFF CACHE BOOL "DIsables tests" FORCE)
+set(BUILD_TESTING OFF CACHE BOOL "Disables tests" FORCE)
 set(BUILD_MULTICAST OFF CACHE BOOL "Disables multicast tests" FORCE)
 set(BUILT_INTEGRATION OFF CACHE BOOL "Disables integration tests " FORCE)
 set(BUILD_TOOLS OFF CACHE BOOL "Disables build tools" FORCE)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/zenoh-pico)
 include_directories(${CMAKE_SOURCE_DIR}/zenoh-pico/include)
+# target_compile_definitions(zenohpico PUBLIC Z_LINK_WS=1 Z_LINK_TCP=0 Z_LINK_UDP_MULTICAST=0 Z_LINK_UDP_UNICAST=0 Z_SCOUTING_UDP=0)
 target_compile_definitions(zenohpico PUBLIC Z_LINK_WS=1 Z_LINK_TCP=0 Z_LINK_UDP_MULTICAST=0 Z_LINK_UDP_UNICAST=0 Z_SCOUTING_UDP=0 Z_MULTI_THREAD=1)
-target_compile_options(zenohpico PUBLIC -fPIC)
-# target_compile_options(zenohpico PUBLIC -fPIC -pthread)
+# target_compile_options(zenohpico PUBLIC -fPIC)
+target_compile_options(zenohpico PUBLIC -fPIC -pthread)
 # -fPIC : When used as a Library, the code is not  linked to an address
 
 set(CMAKE_EXECUTABLE_SUFFIX ".js")
@@ -59,6 +60,8 @@ set(WASM_LINK_FLAGS "--extern-pre-js=${CMAKE_SOURCE_DIR}/COPYWRITE.js \
 -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
 -s ALLOW_TABLE_GROWTH \
 -s RESERVED_FUNCTION_POINTERS=100 \
+-s ALLOW_MEMORY_GROWTH=1 \
+-s PTHREAD_POOL_SIZE=16 \
 -s ASYNCIFY=1 \
 -s EXPORT_ES6=1 \
 -s MODULARIZE=1 \
@@ -67,11 +70,14 @@ set(WASM_LINK_FLAGS "--extern-pre-js=${CMAKE_SOURCE_DIR}/COPYWRITE.js \
 -s EXPORT_ALL=1 \
 -s EXPORT_NAME=zenohWasm \
 -s ALLOW_TABLE_GROWTH \
+-pthread \
 -fPIC \
 --bind")
 
 # -s PTHREAD_POOL_SIZE=1 \
 # -pthread \
+# -s ASYNCIFY_DEBUG \
+
 
 # Cannot Export Types for C files
 # Need to figure out how to emit types for C files

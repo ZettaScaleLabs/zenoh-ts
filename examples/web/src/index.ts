@@ -24,10 +24,9 @@ async function main() {
 
     // Test push
     console.log("Start Openning Zenoh Session");
-    // let conn_string = "ws/192.168.21.42:10000";
-    // let conn_string = "ws/192.168.1.176:10000";
-    // let conn_string = "ws/192.168.1.36:10000";
-    let conn_string = "ws/192.168.1.27:10000";
+
+    let conn_string = "ws/192.168.16.39:10000";
+    
     console.log("Connecting to ",conn_string) 
     
     const session = await zenoh.Session.open(zenoh.Config.new(conn_string))
@@ -62,7 +61,14 @@ async function main() {
 
     // SUB SUB SUB SUB SUB SUB SUB SUB SUB SUB SUB SUB SUB SUB 
     console.log("Start Sub !");
-    var sub_res = await session.neo_sub(keyexpr2);
+    var sub_res = await session.neo_sub(keyexpr2, cb);
+    console.log("End Sub Values");
+
+    // 
+    console.log("Start Sub !");
+    var sub_res = for next in session.neo_sub(keyexpr2, cb){
+
+    };
     console.log("End Sub Values");
     // SUB SUB SUB SUB SUB SUB SUB SUB SUB SUB SUB SUB SUB SUB 
 

@@ -12,13 +12,17 @@
 //   ZettaScale Zenoh Team, <zenoh@zettascale.tech>
 //
 
-import { Config, Session } from "@eclipse-zenoh/zenoh-ts";
+import { Config, KeyExpr, Session } from "@eclipse-zenoh/zenoh-ts";
 
 export async function main() {
-  console.warn('Running Zenoh Put !');
+  console.info('Openning Session... !');
 
   const session = await Session.open(new Config("ws/127.0.0.1:10000"));
-  session.put("demo/example/zenoh-ts-put", "Put from Typescript!");
+  let key_expr = new KeyExpr("demo/example/zenoh-ts-put");
+  let payload  = "Put from Typescript!";
+
+  console.info("Putting Data ('",key_expr,"': '",payload,"')...");
+  session.put("demo/example/zenoh-ts-put",payload);
 }
 
 main()

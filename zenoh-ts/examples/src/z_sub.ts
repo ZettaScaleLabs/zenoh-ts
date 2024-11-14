@@ -22,14 +22,14 @@ export async function main() {
 
   // Callback Subscriber take a callback which will be called upon every sample received.
   // const callback = async function (sample: Sample): Promise<void> {
-  //   console.warn!(
+  //   console.info!(
   //     ">> [Subscriber] Received " +
   //     sample.kind() + " ('" +
   //     sample.keyexpr() + "': '" +
   //     sample.payload().deserialize(deserialize_string) + "')",
   //   );
   // };
-  // console.warn("Declare Subscriber ", key_expr.toString());
+  // console.info("Declare Subscriber ", key_expr.toString());
   // let callback_subscriber: Subscriber = await session.declare_subscriber(
   //   key_expr,
   //   callback,
@@ -37,7 +37,7 @@ export async function main() {
 
   // await sleep(1000 * 3);
   // callback_subscriber.undeclare();
-  // console.warn("Undeclare callback_subscriber");
+  // console.info("Undeclare callback_subscriber");
 
   // Poll Subscribers will only consume data on calls to receieve()
   // This means that interally the FIFO queue will fill up to the point that new values will be dropped
@@ -45,7 +45,7 @@ export async function main() {
   let poll_subscriber: Subscriber = await session.declare_subscriber(key_expr, new RingChannel(10));
   let sample = await poll_subscriber.receive();
   while (sample != undefined) {
-    console.warn!(
+    console.info!(
       ">> [Subscriber] Received " +
       sample.kind() + " ('" +
       sample.keyexpr() + "': '" +

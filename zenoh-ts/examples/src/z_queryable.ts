@@ -17,7 +17,7 @@ import { Config, KeyExpr, Query, Queryable, Session, ZBytes } from "@eclipse-zen
 export async function main() {
   const session = await Session.open(new Config("ws/127.0.0.1:10000"));
   let key_expr = new KeyExpr("demo/example/zenoh-ts-queryable");
-  console.warn("Declare Queryable on KeyExpr:", key_expr.toString());
+  console.info("Declare Queryable on KeyExpr:", key_expr.toString());
 
   const payload = [122, 101, 110, 111, 104];
 
@@ -26,14 +26,14 @@ export async function main() {
     let zbytes: ZBytes | undefined = query.payload();
 
     if (zbytes == null) {
-      console.warn!(`>> [Queryable ] Received Query ${query.selector()}`);
+      console.info!(`>> [Queryable ] Received Query ${query.selector()}`);
     } else {
-      console.warn!(
+      console.info!(
         `>> [Queryable ] Received Query ${query.selector()} with payload '${zbytes}'`,
       );
     }
 
-    console.warn(
+    console.info(
       `>> [Queryable ] Responding ${key_expr.toString()} with payload '${payload}'`,
     );
     query.reply(key_expr, payload);
@@ -58,14 +58,14 @@ export async function main() {
     let zbytes: ZBytes | undefined = query.payload();
 
     if (zbytes == null) {
-      console.warn!(`>> [Queryable ] Received Query ${query.selector().toString()}`);
+      console.info!(`>> [Queryable ] Received Query ${query.selector().toString()}`);
     } else {
-      console.warn!(
+      console.info!(
         `>> [Queryable ] Received Query ${query.selector()} with payload '${zbytes.buffer()}'`,
       );
     }
 
-    console.warn(
+    console.info(
       `>> [Queryable ] Responding ${key_expr.toString()} with payload '${payload}'`,
     );
     query.reply(key_expr, payload);

@@ -39,21 +39,21 @@ export async function main() {
   
   while (reply != RecvErr.Disconnected) {
     if (reply == RecvErr.MalformedReply) {
-      console.warn("MalformedReply");
+      console.info("MalformedReply");
     } else {
       let resp = reply.result();
       if (resp instanceof Sample) {
         let sample: Sample = resp;
-        console.warn(">> Alive token ('", sample.keyexpr() ,")");
+        console.info(">> Alive token ('", sample.keyexpr() ,")");
       } else {
         let reply_error: ReplyError = resp;
-        console.warn(">> Received (ERROR: '", reply_error.payload().deserialize(deserialize_string), "')");
+        console.info(">> Received (ERROR: '", reply_error.payload().deserialize(deserialize_string), "')");
       }
     }
     reply = await receiver.receive();
   }
 
-  console.warn("End Liveliness query");
+  console.info("End Liveliness query");
 }
 
 main()

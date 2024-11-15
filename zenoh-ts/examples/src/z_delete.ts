@@ -15,9 +15,14 @@
 import { Config, Session } from "@eclipse-zenoh/zenoh-ts";
 
 export async function main() {
+
+  console.info!("Opening session...");
   const session = await Session.open(new Config("ws/127.0.0.1:10000"));
-  session.delete("demo/example/zenoh-ts-delete");
+  console.info!("Deleting resources matching '{key_expr}'...");
+
+  session.delete("demo/example/zenoh-ts-put");
   await session.close();
+
 }
 
 main()

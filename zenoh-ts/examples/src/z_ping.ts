@@ -28,7 +28,7 @@ export async function main() {
   );
 
   // Warm up
-  console.warn("Warming up for 5 seconds...");
+  console.info("Warming up for 5 seconds...");
 
   let startTime = new Date();
   let data = [122, 101, 110, 111, 104];
@@ -49,7 +49,7 @@ export async function main() {
 
   for (let i = 0; i < samples_out.length; i++) {
     let rtt = samples_out[i];
-    console.warn(
+    console.info(
       data.length +
       "bytes: seq=" +
       i +

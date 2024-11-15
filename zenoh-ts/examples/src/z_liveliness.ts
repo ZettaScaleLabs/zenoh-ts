@@ -17,10 +17,10 @@ import {
 
 export async function main() {
 
-  console.log("Opening session...")
+  console.info("Opening session...")
   const session = await Session.open(new Config ("ws/127.0.0.1:10000"));
   let key_expr = new KeyExpr("group1/zenoh-rs");
-  console.log("Declaring Liveliness token on ",key_expr.toString());
+  console.info("Declaring Liveliness token on ",key_expr.toString());
 
   let token: LivelinessToken = session.liveliness().declare_token(key_expr);
   // LivelinessTokens are NOT automatically closed when dropped
@@ -28,7 +28,7 @@ export async function main() {
 
   while (true) {
     await sleep(10000);
-    console.log("Tick")
+    console.info("Tick")
   }
 }
 

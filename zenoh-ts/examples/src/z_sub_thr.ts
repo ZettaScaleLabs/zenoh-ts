@@ -48,19 +48,19 @@ class Stats {
   print_round() {
     let elapsed_ms = Date.now() - this.round_start;
     let throughput = (this.round_size) / (elapsed_ms / 1000);
-    console.warn(throughput, " msg/s");
+    console.info(throughput, " msg/s");
   }
 }
 
 export async function main() {
-  console.warn("Open Session");
+  console.info("Open Session");
   const session: Session = await Session.open(new Config("ws/127.0.0.1:10000"));
   let stats = new Stats(100000);
   const subscriber_callback = async function (_sample: Sample): Promise<void> {
     stats.increment();
   };
 
-  console.warn("Declare subscriber");
+  console.info("Declare subscriber");
   await session.declare_subscriber(
     "test/thr",
     subscriber_callback,
@@ -70,7 +70,7 @@ export async function main() {
   while (true) {
     var seconds = 100;
     await sleep(1000 * seconds);
-    console.warn("Main Loop ? ", count);
+    console.info("Main Loop ? ", count);
     count = count + 1;
   }
 }

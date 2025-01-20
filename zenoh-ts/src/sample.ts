@@ -12,8 +12,6 @@
 //   ZettaScale Zenoh Team, <zenoh@zettascale.tech>
 //
 
-// External
-import { encode as b64_str_from_bytes, decode as b64_bytes_from_str, } from "base64-arraybuffer";
 // Internal
 import { KeyExpr } from "./key_expr.js";
 import { OwnedKeyExprWrapper } from "./remote_api/interface/OwnedKeyExprWrapper.js";
@@ -21,6 +19,8 @@ import { SampleKindWS } from "./remote_api/interface/SampleKindWS.js";
 import { SampleWS } from "./remote_api/interface/SampleWS.js";
 import { ZBytes } from "./z_bytes.js";
 import { Encoding } from "./encoding.js";
+// External
+import { encode as b64_str_from_bytes, decode as b64_bytes_from_str, } from "base64-arraybuffer";
 
 /**
  * Kinds of Samples that can be received from Zenoh
@@ -107,6 +107,7 @@ export function congestion_control_to_int(
       return 0;
     case CongestionControl.BLOCK:
       return 1;
+    // Default is Drop
     default:
       return 0;
   }
@@ -326,7 +327,7 @@ export function SampleWS_from_Sample(
   attachement: ZBytes | undefined,
 ): SampleWS {
   let key_expr: OwnedKeyExprWrapper = sample.keyexpr().toString();
-  let value: Array<number> = Array.from(sample.payload().buffer());
+  let value: Array<number> = Array.from(sample.payload().to_bytes());
 
   let sample_kind: SampleKindWS;
   if (sample.kind() == SampleKind.DELETE) {
@@ -343,7 +344,7 @@ export function SampleWS_from_Sample(
 
   let attach = null;
   if (attachement != null) {
-    attach = b64_str_from_bytes(new Uint8Array(attachement.buffer()));
+    attach = b64_str_from_bytes(new Uint8Array(attachement.to_bytes()));
   }
 
   let sample_ws: SampleWS = {

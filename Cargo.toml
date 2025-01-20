@@ -1,16 +1,16 @@
 
 [workspace]
-members = ["zenoh-plugin-remote-api"]
+members = ["zenoh-plugin-remote-api", "zenoh-keyexpr-wasm"]
 resolver = "1"
 
 [workspace.package]
-version = "1.0.0-dev"
+version = "1.1.1"
 repository = "https://github.com/eclipse-zenoh/zenoh-ts"
 homepage = "http://zenoh.io"
 authors = ["Charles Schleich <charles.schleich@zettascale.tech>"]
 edition = "2021"
 license = "EPL-2.0 OR Apache-2.0"
-categories = ["network-programming", "database"]
+categories = ["network-programming"]
 description = "Remote API Plugin for Zenoh using Websockets"
 
 [workspace.dependencies]
@@ -29,6 +29,7 @@ ts-rs = { version = "9.0", features = [
     "uuid-impl",
     "serde-json-impl",
     "no-serde-warnings",
+    "import-esm",
 ] }
 tracing = "0.1"
 schemars = { version = "0.8.12", features = ["either"] }
@@ -36,16 +37,19 @@ serde = { version = "1.0.154", default-features = false, features = [
     "derive",
 ] } # Default features are disabled due to usage in no_std crates
 serde_json = "1.0.114"
-zenoh = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "main", features = [
+zenoh = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "release/1.1.1", features = [
     "plugins",
-], version = "1.0.0-dev" }
-zenoh-ext = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "main", version = "1.0.0-dev" }
-zenoh_backend_traits = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "main", version = "1.0.0-dev" }
-zenoh-plugin-trait = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "main", version = "1.0.0-dev" }
-zenoh-util = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "main", version = "1.0.0-dev" }
-zenoh-result = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "main", version = "1.0.0-dev" }
+], version = "1.1.1" }
+zenoh-ext = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "release/1.1.1", version = "1.1.1" }
+zenoh_backend_traits = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "release/1.1.1", version = "1.1.1" }
+zenoh-plugin-trait = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "release/1.1.1", version = "1.1.1" }
+zenoh-util = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "release/1.1.1", version = "1.1.1" }
+zenoh-result = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "release/1.1.1", version = "1.1.1" }
 uuid = { version = "1.3.0", default-features = false, features = [
     "v4",
     "serde",
 ] }
 uhlc = { version = "0.8.0", default-features = false } # Default features are disabled due to usage in no_std crates
+
+[workspace.metadata.bin]
+zenohd = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "main", version = "1.0.0-dev" }

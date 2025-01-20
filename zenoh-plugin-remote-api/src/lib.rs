@@ -49,6 +49,7 @@ use tokio_rustls::{
 };
 use tokio_tungstenite::tungstenite::protocol::Message;
 use tracing::{debug, error};
+use uhlc::Timestamp;
 use uuid::Uuid;
 use zenoh::{
     bytes::{Encoding, ZBytes},
@@ -62,7 +63,7 @@ use zenoh::{
     },
     liveliness::LivelinessToken,
     pubsub::Publisher,
-    query::{Query, Queryable},
+    query::{Querier, Query},
     Session,
 };
 use zenoh_plugin_trait::{plugin_long_version, plugin_version, Plugin, PluginControl};
@@ -477,15 +478,19 @@ struct RemoteState {
     websocket_tx: Sender<RemoteAPIMsg>,
     session_id: Uuid,
     session: Session,
+    // Timestamp
+    timestamps: HashMap<Uuid, Timestamp>,
     // PubSub
     subscribers: HashMap<Uuid, (JoinHandle<()>, OwnedKeyExpr)>,
     publishers: HashMap<Uuid, Publisher<'static>>,
     // Queryable
-    queryables: HashMap<Uuid, (Queryable<()>, OwnedKeyExpr)>,
+    queryables: HashMap<Uuid, (JoinHandle<()>, OwnedKeyExpr)>,
     unanswered_queries: Arc<std::sync::RwLock<HashMap<Uuid, Query>>>,
     // Liveliness
     liveliness_tokens: HashMap<Uuid, LivelinessToken>,
     liveliness_subscribers: HashMap<Uuid, (JoinHandle<()>, OwnedKeyExpr)>,
+    // Querier
+    queriers: HashMap<Uuid, Querier<'static>>,
 }
 
 impl RemoteState {
@@ -494,12 +499,14 @@ impl RemoteState {
             websocket_tx,
             session_id,
             session,
+            timestamps: HashMap::new(),
             subscribers: HashMap::new(),
             publishers: HashMap::new(),
             queryables: HashMap::new(),
             unanswered_queries: Arc::new(std::sync::RwLock::new(HashMap::new())),
             liveliness_tokens: HashMap::new(),
             liveliness_subscribers: HashMap::new(),
+            queriers: HashMap::new(),
         }
     }
 
@@ -514,9 +521,7 @@ impl RemoteState {
         }
 
         for (_, (queryable, _)) in self.queryables {
-            if let Err(e) = queryable.undeclare().await {
-                error!("{e}")
-            }
+            queryable.abort();
         }
 
         drop(self.unanswered_queries);
@@ -608,9 +613,13 @@ async fn run_websocket_server(
                 None => Box::new(tcp_stream),
             };
 
-            let ws_stream = tokio_tungstenite::accept_async(streamable)
-                .await
-                .expect("Error during the websocket handshake occurred");
+            let ws_stream = match tokio_tungstenite::accept_async(streamable).await {
+                Ok(ws_stream) => ws_stream,
+                Err(e) => {
+                    error!("Error during the websocket handshake occurred: {}", e);
+                    return;
+                }
+            };
 
             let (ws_tx, ws_rx) = ws_stream.split();
 
@@ -667,7 +676,7 @@ async fn handle_message(
             Ok(msg) => match msg {
                 RemoteAPIMsg::Control(ctrl_msg) => {
                     match handle_control_message(ctrl_msg, sock_addr, state_map).await {
-                        Ok(ok) => return ok.map(RemoteAPIMsg::Control),
+                        Ok(_) => return None,
                         Err(err) => {
                             tracing::error!(err);
                         }

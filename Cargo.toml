@@ -21,6 +21,7 @@ rust-version = "1.75.0"
 async-liveliness-monitor = "0.1.1"
 bytes = "1.10.1"
 clap = { version = "4.5.40", features = ["derive"] }
+json5 = "0.4"
 rustc_version = "0.4.0"
 tokio = { version = "1.45.1", features = ["rt", "macros", "time"] }
 tokio-tungstenite = "0.27.0"
@@ -45,6 +46,7 @@ zenoh = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "main", f
     "plugins",
     "unstable",
 ], version = "1.9.0" }
+zenoh-config = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "main", version = "1.9.0" }
 zenoh-ext = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "main", version = "1.9.0" }
 zenoh-plugin-trait = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "main", version = "1.9.0" }
 zenoh-util = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "main", version = "1.9.0" }

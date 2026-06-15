@@ -10,6 +10,8 @@
             title="Session"
             icon="🔗"
             section-class="session-section"
+            collapsible
+            v-model:collapsed="sessionSectionCollapsed"
           >
             <!-- Open Operation -->
             <Entity
@@ -97,6 +99,8 @@
             icon="📡"
             section-class="pubsub-section"
             :disabled="!selectedSessionId"
+            collapsible
+            v-model:collapsed="pubsubSectionCollapsed"
           >
             <!-- Declare Subscriber Operation -->
             <Entity
@@ -162,9 +166,153 @@
               </template>
             </Entity>
 
-            <!-- Put Operation -->
+            <!-- Declare Publisher Operation -->
             <Entity
-              title="Put"
+              title="Publisher"
+              :session="selectedSessionId"
+              :selected-session="selectedSessionId"
+              :descr="publisherParameters.key.value"
+              v-model:editsExpanded="publisherOptionsCollapsed"
+            >
+              <template #actions>
+                <button
+                  @click="declarePublisher"
+                  :disabled="
+                    !selectedSessionId || !publisherParameters.key.value
+                  "
+                >
+                  Declare
+                </button>
+              </template>
+
+              <template #edits>
+                <KeyExprInput
+                  v-model="publisherParameters.key.value"
+                  label="Key Expression"
+                  placeholder="Key expression (e.g., demo/example/publisher)"
+                  :disabled="!selectedSessionId"
+                />
+
+                <EncodingSelect
+                  v-model="publisherParameters.encoding.value"
+                  v-model:custom-encoding="publisherParameters.customEncoding.value"
+                  :encoding-options="encodingOptions"
+                  :disabled="!selectedSessionId"
+                />
+
+                <PrioritySelect
+                  v-model="publisherParameters.priority.value"
+                  :disabled="!selectedSessionId"
+                  :options="priorityOptions"
+                />
+
+                <CongestionControlSelect
+                  v-model="publisherParameters.congestionControl.value"
+                  :disabled="!selectedSessionId"
+                  :options="congestionControlOptions"
+                />
+
+                <ExpressSelect
+                  v-model="publisherParameters.express.value"
+                  :disabled="!selectedSessionId"
+                />
+
+                <ReliabilitySelect
+                  v-model="publisherParameters.reliability.value"
+                  :disabled="!selectedSessionId"
+                  :options="reliabilityOptions"
+                />
+
+                <AllowedDestinationSelect
+                  v-model="publisherParameters.allowedDestination.value"
+                  :disabled="!selectedSessionId"
+                  :options="localityOptions"
+                />
+              </template>
+
+              <!-- Active Publishers as Sub-entities -->
+              <template v-if="activePublishers.length > 0" #sub-entities>
+                <Entity
+                  v-for="publisherState in activePublishers"
+                  :key="publisherState.displayId"
+                  :title="publisherState.displayId"
+                  :session="publisherState.sessionId"
+                  :selected-session="selectedSessionId"
+                  :descr="publisherState.keyExpr"
+                >
+                  <template #actions>
+                    <button
+                      @click="publishData(publisherState.displayId)"
+                      :disabled="!selectedSessionId ||
+                        (publisherState.putParameters.publicationKind === SampleKind.PUT && publisherState.putParameters.payloadEmpty)"
+                    >
+                      {{ publisherState.putParameters.publicationKind === SampleKind.PUT ? 'Put' : 'Delete' }}
+                    </button>
+                    <button
+                      @click="undeclarePublisher(publisherState.displayId)"
+                      :disabled="!selectedSessionId"
+                    >
+                      Undeclare
+                    </button>
+                  </template>
+
+                  <!-- Info as reactive slot -->
+                  <template #info>
+                    <ParameterDisplay
+                      type="neutral"
+                      :data="{ 'PublisherOptions': publisherState.options }"
+                    />
+                    <ParameterDisplay
+                      type="neutral"
+                      :data="{
+                        'Put Config': {
+                          'Payload': publisherState.putParameters.payload,
+                          'Put Options': publisherState.putParameters.putOptionsJSON
+                        }
+                      }"
+                    />
+                  </template>
+
+                  <!-- Edit Put Parameters Section -->
+                  <template #edits>
+                    <PublicationKindSelect
+                      v-model="publisherState.putParameters.publicationKind"
+                      :options="sampleKindOptions"
+                      :disabled="!selectedSessionId"
+                    />
+
+                    <PayloadInput
+                      v-if="publisherState.putParameters.publicationKind === SampleKind.PUT"
+                      v-model="publisherState.putParameters.payload"
+                      v-model:is-empty="publisherState.putParameters.payloadEmpty"
+                      label="Payload"
+                      placeholder="Data to publish"
+                      :disabled="!selectedSessionId"
+                    />
+
+                    <EncodingSelect
+                      v-if="publisherState.putParameters.publicationKind === SampleKind.PUT"
+                      v-model="publisherState.putParameters.encoding"
+                      v-model:custom-encoding="publisherState.putParameters.customEncoding"
+                      :encoding-options="encodingOptions"
+                      :disabled="!selectedSessionId"
+                    />
+
+                    <PayloadInput
+                      v-model="publisherState.putParameters.attachment"
+                      v-model:is-empty="publisherState.putParameters.attachmentEmpty"
+                      label="Attachment"
+                      placeholder="Optional attachment data"
+                      :disabled="!selectedSessionId"
+                    />
+                  </template>
+                </Entity>
+              </template>
+            </Entity>
+
+            <!-- Put/Delete Operation -->
+            <Entity
+              title="Put/Delete"
               :session="selectedSessionId"
               :selected-session="selectedSessionId"
               :descr="putParameters.key.value"
@@ -176,21 +324,29 @@
                   :disabled="
                     !selectedSessionId ||
                     !putParameters.key.value ||
-                    putParameters.valueEmpty.value
+                    (putParameters.publicationKind.value === SampleKind.PUT && putParameters.valueEmpty.value)
                   "
                 >
-                  Run
+                  {{ putParameters.publicationKind.value === SampleKind.PUT ? 'Put' : 'Delete' }}
                 </button>
               </template>
 
               <template #edits>
+                <PublicationKindSelect
+                  v-model="putParameters.publicationKind.value"
+                  :options="sampleKindOptions"
+                  :disabled="!selectedSessionId"
+                />
+
                 <KeyExprInput
                   v-model="putParameters.key.value"
                   label="Key Expression"
                   placeholder="Key expression (e.g., demo/example/test)"
                   :disabled="!selectedSessionId"
                 />
+
                 <PayloadInput
+                  v-if="putParameters.publicationKind.value === SampleKind.PUT"
                   v-model="putParameters.value.value"
                   v-model:is-empty="putParameters.valueEmpty.value"
                   label="Payload"
@@ -199,6 +355,7 @@
                 />
 
                 <EncodingSelect
+                  v-if="putParameters.publicationKind.value === SampleKind.PUT"
                   v-model="putParameters.encoding.value"
                   v-model:custom-encoding="putParameters.customEncoding.value"
                   :encoding-options="encodingOptions"
@@ -251,6 +408,8 @@
             icon="🔍"
             section-class="query-section"
             :disabled="!selectedSessionId"
+            collapsible
+            v-model:collapsed="querySectionCollapsed"
           >
             <!-- Declare Queryable Operation -->
             <Entity
@@ -322,14 +481,14 @@
                       :data="{ 
                         'Reply Config': {
                           'Reply Type': queryableState.responseParameters.replyType,
-                          ...(queryableState.responseParameters.replyType === 'reply' ? {
+                          ...(queryableState.responseParameters.replyType === ResponseType.Sample ? {
                             'Reply Key': queryableState.responseParameters.reply.keyExpr,
                             'Reply Options': queryableState.responseParameters.reply.replyOptionsJSON
                           } : {}),
-                          ...(queryableState.responseParameters.replyType === 'replyErr' ? {
+                          ...(queryableState.responseParameters.replyType === ResponseType.Error ? {
                             'Error Options': queryableState.responseParameters.replyErr.replyErrOptionsJSON
                           } : {}),
-                          ...(queryableState.responseParameters.replyType === 'ignore' ? {
+                          ...(queryableState.responseParameters.replyType === ResponseType.Ignore ? {
                             'Behavior': 'Queries received but no reply sent (only query.finalize() called)'
                           } : {})
                         }
@@ -342,14 +501,20 @@
                     <!-- Response Type Selection -->
                     <ResponseTypeSelect
                       v-model="queryableState.responseParameters.replyType"
-                      :name="`response-type-${queryableState.displayId}`"
+                      :options="responseTypeOptions"
                       :disabled="!selectedSessionId"
                     />
 
                     <!-- Reply Fields -->
                     <template
-                      v-if="queryableState.responseParameters.replyType === 'reply'"
+                      v-if="queryableState.responseParameters.replyType === ResponseType.Sample"
                     >
+                      <PublicationKindSelect
+                        v-model="queryableState.responseParameters.reply.publicationKind"
+                        :options="sampleKindOptions"
+                        :disabled="!selectedSessionId"
+                      />
+
                       <KeyExprInput
                         v-model="queryableState.responseParameters.reply.keyExpr"
                         label="Key Expression"
@@ -358,6 +523,7 @@
                       />
 
                       <PayloadInput
+                        v-if="queryableState.responseParameters.reply.publicationKind === SampleKind.PUT"
                         v-model="queryableState.responseParameters.reply.payload"
                         v-model:is-empty="queryableState.responseParameters.reply.payloadEmpty"
                         label="Payload"
@@ -366,6 +532,7 @@
                       />
 
                       <EncodingSelect
+                        v-if="queryableState.responseParameters.reply.publicationKind === SampleKind.PUT"
                         v-model="queryableState.responseParameters.reply.encoding"
                         v-model:custom-encoding="queryableState.responseParameters.reply.customEncoding"
                         :encoding-options="encodingOptions"
@@ -407,7 +574,7 @@
 
                     <!-- ReplyErr Fields -->
                     <template
-                      v-if="queryableState.responseParameters.replyType === 'replyErr'"
+                      v-if="queryableState.responseParameters.replyType === ResponseType.Error"
                     >
                       <PayloadInput
                         v-model="queryableState.responseParameters.replyErr.payload"
@@ -427,7 +594,7 @@
 
                     <!-- Ignore Fields -->
                     <template
-                      v-if="queryableState.responseParameters.replyType === 'ignore'"
+                      v-if="queryableState.responseParameters.replyType === ResponseType.Ignore"
                     >
                       <div class="ignore-info">
                         <p class="ignore-description">
@@ -436,6 +603,202 @@
                         </p>
                       </div>
                     </template>
+                  </template>
+                </Entity>
+              </template>
+            </Entity>
+
+            <!-- Declare Querier Operation -->
+            <Entity
+              title="Querier"
+              :session="selectedSessionId"
+              :selected-session="selectedSessionId"
+              :descr="querierParameters.key.value"
+              v-model:editsExpanded="querierOptionsCollapsed"
+            >
+              <template #actions>
+                <button
+                  @click="declareQuerier"
+                  :disabled="
+                    !selectedSessionId || !querierParameters.key.value
+                  "
+                >
+                  Declare
+                </button>
+              </template>
+
+              <template #edits>
+                <KeyExprInput
+                  v-model="querierParameters.key.value"
+                  label="Key Expression"
+                  placeholder="Key expression (e.g., demo/example/*)"
+                  :disabled="!selectedSessionId"
+                />
+
+                <PrioritySelect
+                  v-model="querierParameters.priority.value"
+                  :disabled="!selectedSessionId"
+                  :options="priorityOptions"
+                />
+
+                <CongestionControlSelect
+                  v-model="querierParameters.congestionControl.value"
+                  :disabled="!selectedSessionId"
+                  :options="congestionControlOptions"
+                />
+
+                <ExpressSelect
+                  v-model="querierParameters.express.value"
+                  :disabled="!selectedSessionId"
+                />
+
+                <AllowedDestinationSelect
+                  v-model="querierParameters.allowedDestination.value"
+                  :disabled="!selectedSessionId"
+                  :options="localityOptions"
+                />
+
+                <TargetSelect
+                  v-model="querierParameters.target.value"
+                  :disabled="!selectedSessionId"
+                  :options="targetOptions"
+                />
+
+                <ConsolidationSelect
+                  v-model="querierParameters.consolidation.value"
+                  :disabled="!selectedSessionId"
+                  :options="consolidationOptions"
+                />
+
+                <TimeoutInput
+                  v-model="querierParameters.timeout.value"
+                  v-model:is-empty="querierParameters.timeoutEmpty.value"
+                  placeholder="Timeout (ms)"
+                  :disabled="!selectedSessionId"
+                />
+
+                <AcceptRepliesSelect
+                  v-model="querierParameters.acceptReplies.value"
+                  :disabled="!selectedSessionId"
+                  :options="acceptRepliesOptions"
+                />
+              </template>
+
+              <!-- Active Queriers as Sub-entities -->
+              <template v-if="activeQueriers.length > 0" #sub-entities>
+                <Entity
+                  v-for="querierState in activeQueriers"
+                  :key="querierState.displayId"
+                  :title="querierState.displayId"
+                  :session="querierState.sessionId"
+                  :selected-session="selectedSessionId"
+                  :descr="querierState.keyExpr"
+                >
+                  <template #actions>
+                    <button
+                      @click="performQuerierGet(querierState.displayId)"
+                      :disabled="!selectedSessionId"
+                    >
+                      Get
+                    </button>
+                    <button
+                      @click="undeclareQuerier(querierState.displayId)"
+                      :disabled="!selectedSessionId"
+                    >
+                      Undeclare
+                    </button>
+                  </template>
+
+                  <!-- Info as reactive slot -->
+                  <template #info>
+                    <ParameterDisplay
+                      type="neutral"
+                      :data="{ 'QuerierOptions': querierState.options }"
+                    />
+                    <ParameterDisplay
+                      type="neutral"
+                      :data="{
+                        'Get Config': {
+                          'Encoding': querierState.getParameters.encoding || 'default',
+                          'Priority': querierState.getParameters.priority || 'default',
+                          'Get Options': querierState.getParameters.getOptionsJSON
+                        }
+                      }"
+                    />
+                  </template>
+
+                  <!-- Edit Get Parameters Section -->
+                  <template #edits>
+                    <EncodingSelect
+                      v-model="querierState.getParameters.encoding"
+                      v-model:custom-encoding="querierState.getParameters.customEncoding"
+                      :encoding-options="encodingOptions"
+                      :disabled="!selectedSessionId"
+                    />
+
+                    <PrioritySelect
+                      v-model="querierState.getParameters.priority"
+                      :disabled="!selectedSessionId"
+                      :options="priorityOptions"
+                    />
+
+                    <CongestionControlSelect
+                      v-model="querierState.getParameters.congestionControl"
+                      :disabled="!selectedSessionId"
+                      :options="congestionControlOptions"
+                    />
+
+                    <ExpressSelect
+                      v-model="querierState.getParameters.express"
+                      :disabled="!selectedSessionId"
+                    />
+
+                    <AllowedDestinationSelect
+                      v-model="querierState.getParameters.allowedDestination"
+                      :disabled="!selectedSessionId"
+                      :options="localityOptions"
+                    />
+
+                    <TargetSelect
+                      v-model="querierState.getParameters.target"
+                      :disabled="!selectedSessionId"
+                      :options="targetOptions"
+                    />
+
+                    <ConsolidationSelect
+                      v-model="querierState.getParameters.consolidation"
+                      :disabled="!selectedSessionId"
+                      :options="consolidationOptions"
+                    />
+
+                    <TimeoutInput
+                      v-model="querierState.getParameters.timeout"
+                      v-model:is-empty="querierState.getParameters.timeoutEmpty"
+                      placeholder="Timeout (ms)"
+                      :disabled="!selectedSessionId"
+                    />
+
+                    <AcceptRepliesSelect
+                      v-model="querierState.getParameters.acceptReplies"
+                      :disabled="!selectedSessionId"
+                      :options="acceptRepliesOptions"
+                    />
+
+                    <PayloadInput
+                      v-model="querierState.getParameters.payload"
+                      v-model:is-empty="querierState.getParameters.payloadEmpty"
+                      label="Payload"
+                      placeholder="Optional query payload"
+                      :disabled="!selectedSessionId"
+                    />
+
+                    <PayloadInput
+                      v-model="querierState.getParameters.attachment"
+                      v-model:is-empty="querierState.getParameters.attachmentEmpty"
+                      label="Attachment"
+                      placeholder="Optional attachment data"
+                      :disabled="!selectedSessionId"
+                    />
                   </template>
                 </Entity>
               </template>
@@ -538,6 +901,179 @@
               </template>
             </Entity>
           </Section>
+
+          <!-- Liveliness Section -->
+          <Section
+            title="Liveliness"
+            icon="🩺"
+            section-class="liveliness-section"
+            :disabled="!selectedSessionId"
+            collapsible
+            v-model:collapsed="livelinessSectionCollapsed"
+          >
+            <!-- Liveliness Token -->
+            <Entity
+              title="Token"
+              :session="selectedSessionId"
+              :selected-session="selectedSessionId"
+              :descr="livelinessTokenParameters.key.value"
+              v-model:editsExpanded="livelinessTokenOptionsCollapsed"
+            >
+              <template #actions>
+                <button
+                  @click="declareLivelinessToken"
+                  :disabled="
+                    !selectedSessionId || !livelinessTokenParameters.key.value
+                  "
+                >
+                  Declare
+                </button>
+              </template>
+
+              <template #edits>
+                <KeyExprInput
+                  v-model="livelinessTokenParameters.key.value"
+                  label="Key Expression"
+                  placeholder="Key expression (e.g., demo/example/token0)"
+                  :disabled="!selectedSessionId"
+                />
+              </template>
+
+              <!-- Active Tokens as Sub-entities -->
+              <template v-if="activeLivelinessTokens.length > 0" #sub-entities>
+                <Entity
+                  v-for="tokenState in activeLivelinessTokens"
+                  :key="tokenState.displayId"
+                  :title="tokenState.displayId"
+                  :session="tokenState.sessionId"
+                  :selected-session="selectedSessionId"
+                  :descr="tokenState.keyExpr"
+                >
+                  <template #actions>
+                    <button
+                      @click="undeclareLivelinessToken(tokenState.displayId)"
+                      :disabled="!selectedSessionId"
+                    >
+                      Undeclare
+                    </button>
+                  </template>
+
+                  <!-- Info section -->
+                  <template #info>
+                    <ParameterDisplay
+                      type="neutral"
+                      :data="{
+                        'Token Info': {
+                          'Key Expression': tokenState.keyExpr,
+                          'Created At': tokenState.createdAt.toISOString()
+                        }
+                      }"
+                    />
+                  </template>
+                </Entity>
+              </template>
+            </Entity>
+
+            <!-- Liveliness Subscriber -->
+            <Entity
+              title="Subscriber"
+              :session="selectedSessionId"
+              :selected-session="selectedSessionId"
+              :descr="livelinessSubscriberParameters.key.value"
+              v-model:editsExpanded="livelinessSubscriberOptionsCollapsed"
+            >
+              <template #actions>
+                <button
+                  @click="declareLivelinessSubscriber"
+                  :disabled="
+                    !selectedSessionId || !livelinessSubscriberParameters.key.value
+                  "
+                >
+                  Declare
+                </button>
+              </template>
+
+              <template #edits>
+                <KeyExprInput
+                  v-model="livelinessSubscriberParameters.key.value"
+                  label="Key Expression"
+                  placeholder="Key expression (e.g., demo/example/**)"
+                  :disabled="!selectedSessionId"
+                />
+
+                <TriStateCheckbox
+                  v-model="livelinessSubscriberParameters.history.value"
+                  label="History"
+                  :disabled="!selectedSessionId"
+                />
+              </template>
+
+              <!-- Active Liveliness Subscribers as Sub-entities -->
+              <template v-if="activeLivelinessSubscribers.length > 0" #sub-entities>
+                <Entity
+                  v-for="subscriberState in activeLivelinessSubscribers"
+                  :key="subscriberState.displayId"
+                  :title="subscriberState.displayId"
+                  :session="subscriberState.sessionId"
+                  :selected-session="selectedSessionId"
+                  :descr="subscriberState.keyExpr"
+                >
+                  <template #actions>
+                    <button
+                      @click="undeclareLivelinessSubscriber(subscriberState.displayId)"
+                      :disabled="!selectedSessionId"
+                    >
+                      Undeclare
+                    </button>
+                  </template>
+
+                  <!-- Info section -->
+                  <template #info>
+                    <ParameterDisplay
+                      type="neutral"
+                      :data="{
+                        'LivelinessSubscriberOptions': subscriberState.options
+                      }"
+                    />
+                  </template>
+                </Entity>
+              </template>
+            </Entity>
+
+            <!-- Liveliness Get Operation -->
+            <Entity
+              title="Get"
+              :session="selectedSessionId"
+              :selected-session="selectedSessionId"
+              :descr="livelinessGetParameters.key.value"
+              v-model:editsExpanded="livelinessGetOptionsCollapsed"
+            >
+              <template #actions>
+                <button
+                  @click="performLivelinessGet"
+                  :disabled="!selectedSessionId || !livelinessGetParameters.key.value"
+                >
+                  Run
+                </button>
+              </template>
+
+              <template #edits>
+                <KeyExprInput
+                  v-model="livelinessGetParameters.key.value"
+                  label="Key Expression"
+                  placeholder="Key expression (e.g., demo/example/**)"
+                  :disabled="!selectedSessionId"
+                />
+
+                <TimeoutInput
+                  v-model="livelinessGetParameters.timeout.value"
+                  v-model:is-empty="livelinessGetParameters.timeoutEmpty.value"
+                  placeholder="Timeout (ms)"
+                  :disabled="!selectedSessionId"
+                />
+              </template>
+            </Entity>
+          </Section>
         </div>
 
         <!-- Activity Log Panel -->
@@ -600,9 +1136,11 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onUnmounted } from "vue";
+import { ResponseType } from "./composables/useZenohDemo";
 
 // Import components
 import ResponseTypeSelect from "./components/ResponseTypeSelect.vue";
+import PublicationKindSelect from "./components/PublicationKindSelect.vue";
 import ServerInput from "./components/ServerInput.vue";
 import TimeoutInput from "./components/TimeoutInput.vue";
 import TargetSelect from "./components/TargetSelect.vue";
@@ -631,12 +1169,23 @@ const {
   putParameters,
   logEntries,
   activeSubscribers,
+  activePublishers,
   activeQueryables,
+  activeQueriers,
+  activeLivelinessTokens,
+  activeLivelinessSubscribers,
   subscriberParameters,
+  publisherParameters,
   queryableParameters,
+  querierParameters,
+  livelinessTokenParameters,
+  livelinessSubscriberParameters,
+  livelinessGetParameters,
   getParameters,
 
   // Option arrays (now part of the state)
+  sampleKindOptions,
+  responseTypeOptions,
   priorityOptions,
   congestionControlOptions,
   reliabilityOptions,
@@ -645,6 +1194,9 @@ const {
   targetOptions,
   consolidationOptions,
   acceptRepliesOptions,
+
+  // Enum values
+  SampleKind,
 
   // Operations
   connect,
@@ -655,8 +1207,19 @@ const {
   performGet,
   subscribe,
   unsubscribe,
+  declarePublisher,
+  undeclarePublisher,
+  publishData,
   declareQueryable,
   undeclareQueryable,
+  declareQuerier,
+  undeclareQuerier,
+  performQuerierGet,
+  declareLivelinessToken,
+  undeclareLivelinessToken,
+  declareLivelinessSubscriber,
+  undeclareLivelinessSubscriber,
+  performLivelinessGet,
 
   // App operations
   clearLog,
@@ -701,9 +1264,20 @@ const logContent = ref<HTMLElement>();
 // State to track expanded options panels for operations
 const sessionOptionsCollapsed = ref(false);
 const subscriberOptionsCollapsed = ref(false);
+const publisherOptionsCollapsed = ref(false);
 const putOptionsCollapsed = ref(false);
 const queryableOptionsCollapsed = ref(false);
+const querierOptionsCollapsed = ref(false);
+const livelinessTokenOptionsCollapsed = ref(false);
+const livelinessSubscriberOptionsCollapsed = ref(false);
+const livelinessGetOptionsCollapsed = ref(false);
 const getOptionsCollapsed = ref(false);
+
+// State to track collapsed state for sections
+const sessionSectionCollapsed = ref(false);
+const pubsubSectionCollapsed = ref(true);
+const querySectionCollapsed = ref(true);
+const livelinessSectionCollapsed = ref(true);
 
 // Auto-scroll to bottom when new log entries are added
 watch(
@@ -749,6 +1323,38 @@ watch(
     });
   },
   { deep: true, immediate: true }
+);
+
+// Watchers to update putOptionsJSON when publisher put parameters change
+watch(
+  activePublishers,
+  (publishers, _prev, onCleanup) => {
+    const stops = publishers.map((publisher) =>
+      watch(
+        () => publisher.putParameters,
+        () => publisher.putParameters.updatePutOptionsJSON(),
+        { deep: true, immediate: true }
+      )
+    );
+    onCleanup(() => stops.forEach((stop) => stop()));
+  },
+  { immediate: true }
+);
+
+// Watchers to update getOptionsJSON when querier get parameters change
+watch(
+  activeQueriers,
+  (queriers, _prev, onCleanup) => {
+    const stops = queriers.map((querier) =>
+      watch(
+        () => querier.getParameters,
+        () => querier.getParameters.updateGetOptionsJSON(),
+        { deep: true, immediate: true }
+      )
+    );
+    onCleanup(() => stops.forEach((stop) => stop()));
+  },
+  { immediate: true }
 );
 </script>
 

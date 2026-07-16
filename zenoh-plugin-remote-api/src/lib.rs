@@ -28,7 +28,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use futures::{future, pin_mut, StreamExt, TryStreamExt};
+use futures::{future, pin_mut, SinkExt, StreamExt, TryStreamExt};
 use interface::{InRemoteMessage, OutRemoteMessage, SequenceId};
 use remote_state::RemoteState;
 use rustls_pemfile::{certs, private_key};
@@ -549,9 +549,11 @@ async fn run_websocket_server(
                 .into_stream()
                 .map(|(out_msg, sequence_id)| {
                     tracing::trace!("<< Send: {:?} (seq={:?})", out_msg.id(), sequence_id);
-                    Ok(Message::Binary(out_msg.to_wire(sequence_id)))
+                    Ok::<_, Box<tokio_tungstenite::tungstenite::Error>>(Message::Binary(
+                        out_msg.to_wire(sequence_id),
+                    ))
                 })
-                .forward(ws_tx);
+                .forward(ws_tx.sink_map_err(Box::new));
 
             // send confirmation that session was successfully opened
             let admin_client =
